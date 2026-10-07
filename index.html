@@ -2,14 +2,15 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>もちもち ぺたぺた だいぼうけん</title>
 <link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@500&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#2d2a4a;--paper:#f6f3ee;--purple:#7a4fd0;--pink:#ff8fb0;--blue:#4e6fc4;--lime:#b6e03a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-html,body{margin:0;height:100%;overflow:hidden;background:#1d1b33;font-family:"Zen Maru Gothic","Kiwi Maru",sans-serif;color:var(--ink)}
-canvas{display:block}
+html,body{margin:0;height:100%;overflow:hidden;touch-action:none;-webkit-text-size-adjust:100%;-webkit-touch-callout:none;overscroll-behavior:none;background:#1d1b33;font-family:"Zen Maru Gothic","Kiwi Maru",sans-serif;color:var(--ink)}
+canvas{display:block;touch-action:none}
+button,.pc,.st,.tb,.backBtn{touch-action:manipulation}
 .screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;padding:16px;background:rgba(246,243,238,.94);z-index:10;overflow:auto}
 .screen.show{display:flex}
 h1{font-family:"Kiwi Maru";font-size:clamp(28px,6vw,60px);margin:0 0 4px;letter-spacing:.04em;text-align:center;color:var(--ink)}
@@ -368,7 +369,10 @@ document.querySelectorAll('#touch .tb').forEach(b=>{const k=b.dataset.k;
  const end=e=>{if(e.pointerId!==id)return;id=null;for(const k of['left','right','up','down'])press(k,0);home();};
  z.addEventListener('pointerup',end);z.addEventListener('pointercancel',end);}
 document.addEventListener('touchmove',e=>{if(state==='play')e.preventDefault();},{passive:false});
-document.addEventListener('gesturestart',e=>e.preventDefault());
+// ブラウザの かくだい(ピンチ・ダブルタップ)を ふせぐ
+for(const ev of ['gesturestart','gesturechange','gestureend','dblclick'])document.addEventListener(ev,e=>e.preventDefault(),{passive:false});
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+{let lastT=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastT<350&&!e.target.closest('button,.pc,.st,.backBtn'))e.preventDefault();lastT=n;},{passive:false});}
 
 // ---------- save ----------
 let save={unlocked:1,best:{}};
@@ -687,7 +691,7 @@ function step(dt){
 }
 
 // ---------- visuals ----------
-let camX=0,camY=0;
+let camX=0,camY=0,camZ=12.5;
 function visuals(dt,t){
   // squash spring (もちもち)
   let target=1;
@@ -749,7 +753,7 @@ function visuals(dt,t){
   // camera
   const tx=P.x+P.face*2.2, ty=P.y+2.6;
   camX+=(tx-camX)*Math.min(1,dt*3); camY+=(ty-camY)*Math.min(1,dt*(P.vy<-5?5:2.5));
-  const zf=Math.pow(Math.min(2.2,Math.max(1,1.5/camera.aspect)),0.75)*(innerHeight<520?0.8:1);camera.position.set(camX,camY+1.2,12.5*zf); camera.lookAt(camX,camY-0.4,0);
+  const zfT=Math.pow(Math.min(2.2,Math.max(1,1.5/camera.aspect)),0.75)*Math.min(1,Math.max(0.82,Math.min(innerWidth,innerHeight)/560));camZ+=(12.5*zfT-camZ)*Math.min(1,dt*2);camera.position.set(camX,camY+1.2,camZ); camera.lookAt(camX,camY-0.4,0);
   if(window.__closeup){const c=window.__closeup;camera.position.set(P.x+c[0],P.y+c[1],c[2]);camera.lookAt(P.x,P.y+0.8,0);}
   sun.position.set(camX-8,camY+18,14); sun.target.position.set(camX,camY-2,0);
   if(L.moon)L.moon.position.x=camX*0.8+30;
